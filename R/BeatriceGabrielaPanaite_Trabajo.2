@@ -1,0 +1,93 @@
+######Carga los datos y examínalos en R. Emplea las funciones head(), summary(), dim() y str(). ¿Cuántas variables hay?¿Cuántos tratamientos?
+setwd("C:/Users/beatr/OneDrive/Documentos/R")
+datos <- read.table("datos-trabajoR.txt",sep="\t",header=TRUE)
+datos
+head(datos)
+summary(datos)
+dim(datos)#Aquí nos está mostrando que hay 55 observaciones de 4 variables, por lo que hay 4 variables.
+str(datos)
+num_tratamientos <- length(unique(datos$Tratamiento))#Hay 6 tratamientos
+
+#### Haz unboxplot para nuestros datos. Uno para cada condición. Elige un color para cada condición y guárdalo para las siguientes gráficas.
+boxplot(datos$Wildtype, main = "Wildtype",pch = 19, col = "blue")
+boxplot(datos$Sequia, main = "Sequia",pch = 19, col = "red")
+boxplot(datos$ExcesoRiego, main = "ExcesoRiego",pch = 19, col = "green")
+
+####Haz dos gráficos de dispersión. El primero debe comparar Sequía con Wildtype, y el segundo ExcesoRiego con Wildtype. Cada tratamiento debe de ir de un color distinto. Pista: usa col=datos$Tratamiento.
+plot(x = datos$Sequia, y = datos$Wildtype, col=datos$Tratamiento, main = "Sequia vs Wildtype", xlab = "Sequia", ylab = "Wildtype")
+plot(x = datos$ExcesoRiego, y = datos$Wildtype, col=datos$Tratamiento, main = "ExcesoRiesgo vs Wildtype", xlab = "ExcesoRiesgo", ylab = "Wildtype")
+
+####Ponle leyenda al gráfico del apartado anterior. En el margen inferior derecho. Pista: investiga sobre legend().
+legend( "bottomright", legend = unique(datos$Tratamiento),col = 1:length(unique(datos$Tratamiento)),pch=19, title = "Tratamiento")
+
+####Haz un histograma para cada variable. Recuerda mantener los colores.
+hist(datos$Wildtype, main = "Wildtype", xlab = "Wildtype", ylab = "Frecuencia", col = "blue")
+hist(datos$Sequia, main = "Sequia", xlab = "Sequia", ylab = "Frecuencia", col = "red")
+hist(datos$ExcesoRiego, main = "ExcesoRiego", xlab = "ExcesoRiego", ylab = "Frecuencia", col = "green")
+
+####Haz un factor en la columna tratamiento y guárdalo en una variable. Pista: factor(factor$Tratamiento).
+datos$Tratamiento <- as.factor(datos$Tratamiento)
+tratamiento_factor <-datos$Tratamiento
+tratamiento_factor
+
+####Calcula la media y la desviación estándar para cada tratamiento. Recomendación: es más fácil si usas aggregate() o tapply().
+media <- aggregate(. ~ Tratamiento, data = datos, FUN = mean)
+media
+desviacion<- aggregate(. ~ Tratamiento, data = datos, FUN = sd)
+desviacion
+
+####Averigua cuántos elementos tiene cada tratamiento. Recomendación: es más fácil si usas table() con el factor.
+num_elementos<-table(datos$Tratamiento)
+num_elementos
+
+####Extrae los datos para el tratamiento 1 y el tratamiento 4 y guárdalos cada uno en una variable diferente.
+datos_trat1<-subset(datos,Tratamiento==1)
+datos_trat1
+datos_trat2<-subset(datos,Tratamiento==2)
+datos_trat2
+
+####Queremos comprobar que hay diferencias significativas para el tratamiento 1 y el tratamiento 5 entre Wildtype y Sequia, y entre Wildtype y ExcesoRiego. Primero, necesitaríamos comprobar si los datos se distribuyen de forma normal. En función de los resultados de la prueba de normalidad, ¿qué test usarías para cada comparativa? ¿Puedes comparar también Sequia con ExcesoRiego en ambos tratamientos? ** En general, asumimos que las muestras son independientes, pero ¿son sus varianzas iguales? Actúa de acuerdo con tus resultados.
+#Para comprobar que los datos tienen una distribución normal utilizaremos el "shapiro test" y tomaremos como nivel de significancia un 0,05. Si el p valor es superior a 0,05 entonces consideraremos que los datos siguen una distribución normal.
+shapiro.test(datos_trat1$Wildtype) #El resultado es 0,06434>0,05 por lo que sí que sigue una distribución normal
+shapiro.test(datos_trat1$Sequia) #El resultado es 0,1088>0,05 por lo que sí que sigue una distribución normal
+shapiro.test(datos_trat1$ExcesoRiego) #El resultado es 0,4357>0,05 por lo que sí que sigue una distribución normal
+
+datos_trat5<-subset(datos,Tratamiento==5) 
+shapiro.test(datos_trat5$Wildtype)#El resultado es 0,006709<0,05 por lo que no sigue una distribución normal
+shapiro.test(datos_trat5$Sequia)#El resultado es  0.003361<0,05 por lo que no sigue una distribución normal
+shapiro.test(datos_trat5$ExcesoRiego) #El resultado es  0,1411>0,05 por lo que sigue una distribución normal
+
+#Para comprobar si las varianzas son iguales utilizaremos el var.test y si p value>0,05 consideraremos varianzas iguales. En caso contrario, consideraremos que las varianzas no son iguales.
+var.test(datos_trat1$Wildtype, datos_trat1$Sequia) #Como p value = 0.0001293<0.05 no podemos afirmar que las varianzas son iguales.
+var.test(datos_trat1$Wildtype, datos_trat1$ExcesoRiego) #Como p value = 0.003086<0.05 no podemos afirmar que las varianzas son iguales.
+var.test(datos_trat1$Sequia, datos_trat1$ExcesoRiego)#Como p value = 0.2511>0.05 podemos afirmar que las varianzas son iguales.
+
+var.test(datos_trat5$Wildtype, datos_trat5$Sequia) #Como p value = 2.476e-06<0.05 no podemos afirmar que las varianzas son iguales.
+var.test(datos_trat5$Wildtype, datos_trat5$ExcesoRiego)#Como p value = 0.001009<0.05 no podemos afirmar que las varianzas son iguales.
+var.test(datos_trat5$Sequia, datos_trat5$ExcesoRiego)#Como p value = 0.04408<0.05 no podemos afirmar que las varianzas son iguales.
+
+#ComparaciÓn diferencias entre Wildtype vs Sequia y Wildtype vs ExceoRiesgo en el tratamiento 1. Debido a que siguen una distribucion normal pero no tienen las mismas varianzas, utilizaremos el t test.
+t.test(datos_trat1$Wildtype, datos_trat1$Sequia, equal_var=FALSE ) #El p valor=8.642e-06 < 0,05 por lo que sí consideramos que son diferencias significativas.
+t.test(datos_trat1$Wildtype, datos_trat1$ExcesoRiego, equal_var=FALSE )#El p valor=0.0007938< 0,05 por lo que sí consideramos que son diferencias significativas.
+
+#Comparación entre Wildtype vs Sequia y Wildtype vs ExcesoRiesgo en el tratamiento 5. Debido a que los datos no siguen una una distribución normal y tampoco tienen las mismas varianzas. Por lo cual usaremos el Wilcox test.
+wilcox.test(datos_trat1$Wildtype, datos_trat1$Sequia, exact=FALSE) #El p valor=0.0001727< 0,05 por lo que sí consideramos que son diferencias significativas.
+wilcox.test(datos_trat5$Wildtype, datos_trat5$ExcesoRiego, exact=FALSE) #El p valor=0.0001621< 0,05 por lo que sí consideramos que son diferencias significativas.
+
+#Comparación entre Sequia y ExcesoRiesgo en tratamiento 1 y tratamiento 5. 
+#En el tratamiento 1 ambas siguen una distribución normal y las varianzas son iguales, por lo cual usaremos el t test.
+t.test(datos_trat5$Sequia, datos_trat5$ExcesoRiego, equal_var=TRUE ) #El p valor=0.0003217< 0,05 por lo que sí consideramos que son diferencias significativas.
+#En el tratamiento 5 los datos de Sequia no siguen una distribucion normal pero los de ExcesoRiesgo sí. Debido a esta diferencia no podemos comparar estos datos y deberíamos realizar tests no paramétricos.
+
+#### Realiza un ANOVA para comparar el tratamiento 1 en las tres condiciones. Pista: primero separa los valores de tratamiento1 en Wildtype, Sequia y ExcesoRiego en variables separadas. Luego fíjate en el archivo “datos anova.txt” y trata de colocar los datos de esa forma en una tabla. Por último, ejecuta el test.
+sequia<-datos_trat1$Sequia
+sequia
+wildtype<-datos_trat1$Wildtype
+wildtype
+exceso_riesgo<- datos_trat1$ExcesoRiego
+exceso_riesgo
+tabla<- data.frame(sequia,wildtype,exceso_riesgo) 
+tabla
+anova <- aov(sequia~wildtype + exceso_riesgo, data=tabla)
+summary(anova)
+
